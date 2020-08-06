@@ -22,8 +22,8 @@ count = 0
 displayCount = StringVar()
 displayCount.set('Click Me')
 
-click = Label(w, textvariable=displayCount, justify=CENTER, anchor=CENTER)
-click.pack()
+Label(w, textvariable=displayCount, justify=CENTER, anchor=CENTER).pack()
+
 
 # open and resize image
 im = Image.open("doge.jpg")
@@ -52,6 +52,6 @@ def clicked(a):
     displayCount.set(str(count))
 
 
-click.bind('<Button-1>', clicked)
+canvas.bind('<Button-1>', clicked)
 
 mainloop()
