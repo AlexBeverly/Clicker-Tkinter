@@ -46,10 +46,20 @@ canvas.pack()
 # create image on canvas
 dogeSprite = canvas.create_image(size[0]/2,size[1]/2, image=doge)
 
+def reset():
+    global count
+    count = 0
+    displayCount.set('Click Me!')
+
 def clicked(a):
     global count
     count += 1
-    displayCount.set(str(count))
+    if count > 999:
+        displayCount.set('You Win!')
+        w.after(5000, reset)
+    else:
+        displayCount.set(str(count))
+    
 
 
 canvas.bind('<Button-1>', clicked)
