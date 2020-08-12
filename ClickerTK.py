@@ -1,13 +1,58 @@
 from tkinter import *
 from PIL import Image, ImageTk
 
+class upgrade:
+    
+    _level = 1
+    _cost = 10
+    
+    def __init__(self, startLevel):
+        self._level = startLevel
+
+    def set_string_var(self, stringVar, name):
+        self._name = name
+        self._displayCost = stringVar
+        self.display_cost()
+
+    def get_string_var(self):
+        return self._displayCost
+
+    def buy_upgrade(self, stats):
+        if stats['money'] > self._cost:
+            stats['money'] -= self._cost
+            self._level += 1
+            self._cost *= 10
+            self.display_cost()
+
+    def display_cost(self):
+        print(self._name)
+        self._displayCost.set(f'{self._name}\nCost: {self.get_cost()}\nLevel: {self.get_level()}')
+
+    def set_level(self, level):
+        self._level = level
+
+    def get_level(self):
+        return self._level
+
+    def set_cost(self, cost):
+        self._cost = cost
+
+    def get_cost(self):
+        return self._cost
+    
 class dog_clicker:
     
     # keep track of clicks
-    _count = 0
-    _money = 0
+    stats = {
+        'count': 0,
+        'money': 0
+    }
 
-    target = 10
+    upgrades = {
+        'Points per Click': upgrade(1),
+        'Autoclick Speed': upgrade(1)
+    }
+
     canClick = True
     level = 0
     target = 0
@@ -23,14 +68,13 @@ class dog_clicker:
         # set size of the window
         self.root.geometry('x'.join([str(i) for i in self.size]))
 
-        # create a frame in the window (same size as window)
-        self.w = Frame(self.root, height=self.size[0], width=self.size[1])
-        self.w.pack()
+        self.buttons_frame = Frame(self.root)
+        self.buttons_frame.pack(side=BOTTOM)
 
         # StringVar to display clicks and messages
         self.displayCount = StringVar()
 
-        Label(self.w, textvariable=self.displayCount, justify=CENTER, anchor=CENTER).pack()
+        Label(self.root, textvariable=self.displayCount, justify=CENTER, anchor=CENTER).pack()
 
 
         # open and resize image
@@ -38,9 +82,21 @@ class dog_clicker:
 
         
         # create canvas in Frame
-        self.canvas = Canvas(self.w, width=self.size[0], height=self.size[1])
-        self.canvas.pack()
+        self.canvas = Canvas(self.root, width=self.size[0], height=self.size[1])
+        self.canvas.pack(side=TOP)
 
+        # buttons for upgrades
+        for each in self.upgrades:
+            self.upgrades[each].set_string_var(StringVar(), each)
+            Button(
+                self.buttons_frame,
+                textvariable=self.upgrades[each].get_string_var(),
+                command = lambda name=each: self.upgrades[name].buy_upgrade(self.stats)
+                ).pack(side=LEFT)
+            print(self.upgrades[each]._name)
+            
+
+        # bind left click to canvas
         self.canvas.bind('<Button-1>', self.clicked)
         self.reset()
 
@@ -69,12 +125,13 @@ class dog_clicker:
     def auto_click(self):
         if self.canClick:
             self.inc_count(self.level**2)
-            self.w.after(1000, self.auto_click)
+            # TODO: don't let timer go negative
+            self.canvas.after(3000 - ((self.upgrades['Autoclick Speed'].get_level()-1)*1000), self.auto_click)
 
     def reset(self):
-        self._count = 0
+        self.stats['count'] = 0
         self.displayCount.set('Click Me!')
-        self._money += self.target
+        self.stats['money'] += self.target
         self.level += 1
         self.target = 10 ** self.level
         self.canClick = True
@@ -84,28 +141,17 @@ class dog_clicker:
     def clicked(self, a):
         if not self.canClick:
             return
-        self.inc_count(1)
+        self.inc_count(self.upgrades['Points per Click'].get_level())
 
     def inc_count(self, inc):
-        self._count += inc
-        if self._count >= self.target:
+        self.stats['count'] += inc
+        self.stats['money'] += inc
+        self.displayCount.set(f"{self.stats['count']}\n{self.stats['money']}")
+        if self.stats['count'] >= self.target:
             self.canClick = False
-            self.displayCount.set('You Win!')
-            self.w.after(5000, self.reset)
-        else:
-            self._money += inc
-            print(self._money)
-            self.displayCount.set(str(self._count))
-
-class upgrade:
-    
-    level = 0
-    
-    def __init__(self):
-        pass
-
-    def buy_upgrade(self):
-        pass
+            self.displayCount.set(f"You Win!\n{self.stats['money']}")
+            self.canvas.after(5000, self.reset)
+       
 
 if __name__ == '__main__':
     d = dog_clicker()
