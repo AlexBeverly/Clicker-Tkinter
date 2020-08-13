@@ -1,5 +1,9 @@
 from tkinter import *
 from PIL import Image, ImageTk
+import json
+# JSON
+# JavaScript Object Notation
+# stats, upgrade levels
 
 class upgrade:
     
@@ -9,6 +13,7 @@ class upgrade:
     def __init__(self, startLevel):
         self._level = startLevel
 
+    # set stringVar to display cost when changed
     def set_string_var(self, stringVar, name):
         self._name = name
         self._displayCost = stringVar
@@ -18,18 +23,22 @@ class upgrade:
         return self._displayCost
 
     def buy_upgrade(self, stats):
+        # check if player has enough money
         if stats['money'] > self._cost:
+            # if they do, take money and increment level
             stats['money'] -= self._cost
             self._level += 1
             self._cost *= 10
+            # increase and display new cost
             self.display_cost()
 
+    # update stringVar to show new cost
     def display_cost(self):
-        print(self._name)
         self._displayCost.set(f'{self._name}\nCost: {self.get_cost()}\nLevel: {self.get_level()}')
 
     def set_level(self, level):
         self._level = level
+        self.set_cost(10**level)
 
     def get_level(self):
         return self._level
@@ -45,18 +54,22 @@ class dog_clicker:
     # keep track of clicks
     stats = {
         'count': 0,
-        'money': 0
+        'money': 0,
+        'level': 0
     }
 
+    # keep track of upgrade types
     upgrades = {
         'Points per Click': upgrade(1),
         'Autoclick Speed': upgrade(1)
     }
 
+    # track if player can click
     canClick = True
-    level = 0
+
+    # track target score
     target = 0
-    
+
     def __init__(self):
         # tkinter window
         self.root = Tk()
@@ -91,9 +104,8 @@ class dog_clicker:
             Button(
                 self.buttons_frame,
                 textvariable=self.upgrades[each].get_string_var(),
-                command = lambda name=each: self.upgrades[name].buy_upgrade(self.stats)
+                command = lambda name=each: self.buy_upgrade(name)
                 ).pack(side=LEFT)
-            print(self.upgrades[each]._name)
             
 
         # bind left click to canvas
@@ -101,6 +113,10 @@ class dog_clicker:
         self.reset()
 
         mainloop()
+
+    def buy_upgrade(self, name):
+        self.upgrades[name].buy_upgrade(self.stats)
+        self.displayCount.set(f"{self.stats['count']}\n{self.stats['money']}")
 
     def create_image(self, level):
         # crop square
@@ -121,36 +137,75 @@ class dog_clicker:
         self.doge = ImageTk.PhotoImage(doge)
         # create image on canvas
         dogeSprite = self.canvas.create_image(self.size[0]/2,self.size[1]/2, image=self.doge)
-        
+
+    # click the dog and repeat after delay
     def auto_click(self):
         if self.canClick:
-            self.inc_count(self.level**2)
-            # TODO: don't let timer go negative
-            self.canvas.after(3000 - ((self.upgrades['Autoclick Speed'].get_level()-1)*1000), self.auto_click)
+            self.inc_count(self.upgrades['Points per Click'].get_level() * (self.stats['level']**2))
+            delay = 3000 - ((self.upgrades['Autoclick Speed'].get_level()-1)*50)
 
+            self.canvas.after((50, delay)[delay > 0], self.auto_click)
+
+    # reset after score reaches target
     def reset(self):
+        # reset score
         self.stats['count'] = 0
         self.displayCount.set('Click Me!')
+        # reward player for hitting target
         self.stats['money'] += self.target
-        self.level += 1
-        self.target = 10 ** self.level
+        # increment level
+        self.stats['level'] += 1
+        # get new target
+        self.target = 10 ** self.stats['level']
+        # allow player to click
         self.canClick = True
-        self.create_image(self.level)
+        # tile new dog picture
+        self.create_image(self.stats['level'])
+        # restart auto clicking
         self.auto_click()
+        # save progress
+        self.save_game()
 
+    # runs when player clicks the dog
     def clicked(self, a):
-        if not self.canClick:
-            return
-        self.inc_count(self.upgrades['Points per Click'].get_level())
+        # make sure player can click
+        if self.canClick:
+            # click based on current 'Points per Click' level
+            self.inc_count(self.upgrades['Points per Click'].get_level())
 
+    # increases count and money and updates the label
     def inc_count(self, inc):
         self.stats['count'] += inc
         self.stats['money'] += inc
         self.displayCount.set(f"{self.stats['count']}\n{self.stats['money']}")
+        # check if target is hit
         if self.stats['count'] >= self.target:
             self.canClick = False
             self.displayCount.set(f"You Win!\n{self.stats['money']}")
             self.canvas.after(5000, self.reset)
+
+    def save_game(self):
+        # dictionary to convert to JSON
+        save = dict()
+
+        # save stats
+        save['stats'] = dict()
+        for stat in self.stats:
+            save['stats'][stat] = self.stats[stat]
+
+        # save upgrade levels
+        save['upgrades'] = dict()
+        for upgrade in self.upgrades:
+            save['upgrades'][upgrade] = self.upgrades[upgrade].get_level()
+
+        # dump to .json file
+        #save_json = json.dumps(save)
+        with open('save_file.json', 'w') as f:
+            json.dump(save, f)
+            
+
+    def load_game(self):
+        pass
        
 
 if __name__ == '__main__':
