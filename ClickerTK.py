@@ -28,10 +28,7 @@ class upgrade:
         if stats['money'] > self._cost:
             # if they do, take money and increment level
             stats['money'] -= self._cost
-            self._level += 1
-            self._cost *= 10
-            # increase and display new cost
-            self.display_cost()
+            self.set_level(self.get_level() + 1)
 
     # update stringVar to show new cost
     def display_cost(self):
@@ -92,7 +89,6 @@ class dog_clicker:
 
         Label(self.root, textvariable=self.displayCount, justify=CENTER, anchor=CENTER).pack()
 
-
         # open and resize image
         self.im = Image.open("doge.png")
 
@@ -115,7 +111,6 @@ class dog_clicker:
         self.canvas.bind('<Button-1>', self.clicked)
         
         self.load_game()
-        self.setup()
 
         mainloop()
 
@@ -220,9 +215,12 @@ class dog_clicker:
             with open(filename) as f:
                 data = json.load(f)
             for stat in data['stats']:
-                self.stats[stat] = data['stats'][stat]
+                if stat in self.stats:
+                    self.stats[stat] = data['stats'][stat]
             for upgrade in data['upgrades']:
-                self.upgrades[upgrade].set_level(data['upgrades'][upgrade])
+                if upgrade in self.upgrades:
+                    self.upgrades[upgrade].set_level(data['upgrades'][upgrade])
+        self.setup()
        
 
 if __name__ == '__main__':
