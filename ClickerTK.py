@@ -1,5 +1,6 @@
 from tkinter import *
 from PIL import Image, ImageTk
+import os
 import json
 # JSON
 # JavaScript Object Notation
@@ -39,6 +40,7 @@ class upgrade:
     def set_level(self, level):
         self._level = level
         self.set_cost(10**level)
+        self.display_cost()
 
     def get_level(self):
         return self._level
@@ -55,7 +57,7 @@ class dog_clicker:
     stats = {
         'count': 0,
         'money': 0,
-        'level': 0
+        'level': 1
     }
 
     # keep track of upgrade types
@@ -71,6 +73,7 @@ class dog_clicker:
     target = 0
 
     def __init__(self):
+        
         # tkinter window
         self.root = Tk()
         self.root.title('Clicker')
@@ -110,7 +113,9 @@ class dog_clicker:
 
         # bind left click to canvas
         self.canvas.bind('<Button-1>', self.clicked)
-        self.reset()
+        
+        self.load_game()
+        self.setup()
 
         mainloop()
 
@@ -150,11 +155,15 @@ class dog_clicker:
     def reset(self):
         # reset score
         self.stats['count'] = 0
-        self.displayCount.set('Click Me!')
         # reward player for hitting target
         self.stats['money'] += self.target
         # increment level
         self.stats['level'] += 1
+        self.setup()
+
+        
+    def setup(self):
+        self.displayCount.set('Click Me!')
         # get new target
         self.target = 10 ** self.stats['level']
         # allow player to click
@@ -165,6 +174,7 @@ class dog_clicker:
         self.auto_click()
         # save progress
         self.save_game()
+        
 
     # runs when player clicks the dog
     def clicked(self, a):
@@ -205,7 +215,14 @@ class dog_clicker:
             
 
     def load_game(self):
-        pass
+        filename = './save_file.json'
+        if os.path.isfile(filename):
+            with open(filename) as f:
+                data = json.load(f)
+            for stat in data['stats']:
+                self.stats[stat] = data['stats'][stat]
+            for upgrade in data['upgrades']:
+                self.upgrades[upgrade].set_level(data['upgrades'][upgrade])
        
 
 if __name__ == '__main__':
